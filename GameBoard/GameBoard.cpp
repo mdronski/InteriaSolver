@@ -2,7 +2,7 @@
 #include "GameBoard.h"
 using namespace std;
 
-void GameBoard::setField(int x, int y, Field field) {
+void GameBoard::setField(int y, int x, Field field) {
     this->board[y][x] = field;
 }
 
@@ -23,12 +23,12 @@ GameBoard::~GameBoard() {
     delete[] this->board;
 }
 
-Field GameBoard::getField(int x, int y) {
+Field GameBoard::getField(int y, int x) {
     return this->board[y][x];
 }
 
 void GameBoard::print() {
-    cout << this->x << " " << this->y << '\n';
+    cout << this->y << " " << this->x << '\n';
     cout << this->maxMoves << '\n';
 
     for (int y = 0; y < this->y; ++y) {
