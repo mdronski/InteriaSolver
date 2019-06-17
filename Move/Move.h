@@ -5,6 +5,10 @@
 #ifndef PROJEKT_MOVE_H
 #define PROJEKT_MOVE_H
 
+#include "../Gem.h"
+#include <vector>
+
+
 enum Direction {
     UP = '0',
     UP_RIGHT = '1',
@@ -20,9 +24,13 @@ class Vertex;
 
 class Move {
 public:
-    Move(Direction direction, Vertex *destination);
     Direction direction;
+    Vertex *start;
     Vertex *destination;
+
+    Move(Direction direction, Vertex *start, Vertex *destination, const std::vector<Gem *> &gems);
+
+    std::vector<Gem*> gems;
 };
 
 

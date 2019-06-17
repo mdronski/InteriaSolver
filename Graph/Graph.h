@@ -6,33 +6,36 @@
 #include <list>
 #include "../GameBoard/GameBoard.h"
 #include "../Direction.h"
-#include "../cmake-build-debug/Gem.h"
+#include "../Gem.h"
 #include "../Vertex/Vertex.h"
+#include <unordered_map>
 
 using namespace std;
 
 
 class Graph {
 private:
-    bool isMineOrStone(Field field);
-    bool isRecessOrNextIsStone(Field field, Field next);
-    bool isFreeOrGem(Field field);
-    bool canGo(Field field, Field nextField);
     void coverDirection(Vertex *v, Direction direction);
-    void printAdjacencyMatrix();
-    void changeDirecion(int &y, int &x, Direction direction);
-
+    void changeDirection(int &y, int &x, Direction direction);
     void addNeighbours(Vertex *v);
+
 
 public:
     explicit Graph(GameBoard *gameBoard);
     GameBoard *gameBoard;
-    vector<Gem> gems;
+    vector<Gem*> gems;
     bool **visitedVertexes;
     Vertex ***vertexes;
     Vertex *root;
-    bool **adjacencyMatrix;
+    std::unordered_map<Vertex*, std::unordered_map<Vertex*, vector<Move>>> paths;
     void printGraph(Vertex *vertex);
+    Gem *getGem(int y, int x);
+    std::unordered_map<Vertex*, vector<Move>> bellmanFord(Vertex *src);
+    std::unordered_map<Vertex*, std::unordered_map<Vertex*, vector<Move>>> shorthestPaths();
+    int getVertexNumber();
+    int getEdgeNumber(Vertex *v);
+    vector<Move> getAllMoves(Vertex *v);
+    void printShortestPaths();
 };
 
 #endif //PROJEKT_GRAPH_H
