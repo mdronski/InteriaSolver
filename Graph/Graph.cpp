@@ -171,48 +171,75 @@ void Graph::coverDirection(Vertex *v, Direction dir) {
 
 }
 
-void Graph::printGraph(Vertex *vertex) {
-    if (!visitedVertexes[vertex->y][vertex->x])
-        visitedVertexes[vertex->y][vertex->x] = true;
-    else
-        return;
-
-//    for (int y = 1; y < gameBoard->y - 1; ++y) {
-//        for (int x = 1; x < gameBoard->x - 1; ++x) {
-//            cout << vertexes[y][x]->y << " " << vertexes[y][x]->x << " : ";
-//            for (Move m : vertexes[y][x]->neighbours){
-//                cout << m.destination->y << "," << m.destination->x << " ";
-//            }
-//            cout << "\n";
-//        }
-//    }
-
-
-    cout << vertex->y << "," << vertex->x << " : ";
-
-    for (Move m : vertex->neighbours){
-        if (!m.gems.empty()){
-            for (Gem *gem : m.gems){
-                cout << "[" << gem->y << "," << gem->x << "]";
-            }
+int Graph::getVertexNumber() {
+    int cnt = 0;
+    for (int y = 1; y < gameBoard->y - 1; ++y) {
+        for (int x = 1; x < gameBoard->x - 1; ++x) {
+            if(visitedVertexes[y][x])
+                cnt++;
         }
-        cout << "(" << m.destination->y << "," << m.destination->x << ")" << " ";
     }
-    cout << "\n";
-    for (Move m: vertex->neighbours){
-        printGraph(m.destination);
+    return cnt;
+}
+
+int Graph::getEdgeNumber(Vertex *v) {
+    int cnt = 0;
+    for (Move m: v->neighbours){
+        cnt += getEdgeNumber(m.destination);
+    }
+    return (int) v->neighbours.size() + cnt;
+}
+
+void Graph::printShortestPaths() {
+
+    for (auto const& y : paths){
+        std::cout << y.first->y << "," << y.first->x << " : ";
+        std::cout << "\n";
+        std::cout << "\n";
+
+        for (auto const& x : y.second){
+            std::cout << x.first->y << "," << x.first->x << " : ";
+
+            for (Move m : x.second){
+                std::cout << (char) m.direction;
+            }
+            std::cout << "\n";
+        }
+        std::cout << "\n";
+        std::cout << "\n";
+        std::cout << "\n";
+
     }
 }
 
-Gem *Graph::getGem(int y, int x) {
-    for (Gem *gem : gems){
-        if (gem->x==x and gem->y==y)
-            return gem;
+vector<Move> Graph::getAllMoves(Vertex *v) {
+    if (!visitedVertexes[v->y][v->x])
+        visitedVertexes[v->y][v->x] = true;
+    else
+        return vector<Move>();
+
+    vector<Move> moves;
+    moves.insert(moves.end(), v->neighbours.begin(), v->neighbours.end());
+
+    for (Move m : v->neighbours){
+        vector<Move> neighbourMoves = getAllMoves(m.destination);
+        moves.insert(moves.end(), neighbourMoves.begin(), neighbourMoves.end());
     }
-    return nullptr;
+    return moves;
 }
 
-std::unordered_map<Vertex*, vector<Move>> Graph::bellmanFord(Vertex *src) {
+std::unordered_map<Vertex *, std::unordered_map<Vertex *, vector<Move>>> Graph::shorthestPaths() {
+    std::unordered_map<Vertex *, std::unordered_map<Vertex *, vector<Move>>> shortestPaths = {};
+    for (int y = 1; y < gameBoard->y - 1; ++y) {
+        for (int x = 1; x < gameBoard->x - 1; ++x) {
+            if(visitedVertexes[y][x])
+                shortestPaths[vertexes[y][x]] = std::get<0>(bellmanFord(vertexes[y][x]));
+        }
+    }
+    return shortestPaths;
+}
+
+std::tuple<std::unordered_map<Vertex*, vector<Move>>, std::unordered_map<Vertex*, int>> Graph::bellmanFord(Vertex *src) {
     int V = getVertexNumber();
     std::unordered_map<Vertex*, int> dist = {};
     std::unordered_map<Vertex*, vector<Move>> paths = {};
@@ -280,75 +307,60 @@ std::unordered_map<Vertex*, vector<Move>> Graph::bellmanFord(Vertex *src) {
 //
 //    }
 
-    return paths;
+    return std::make_tuple(paths, dist);
 }
 
-int Graph::getVertexNumber() {
-    int cnt = 0;
-    for (int y = 1; y < gameBoard->y - 1; ++y) {
-        for (int x = 1; x < gameBoard->x - 1; ++x) {
-            if(visitedVertexes[y][x])
-                cnt++;
-        }
-    }
-    return cnt;
-}
-
-int Graph::getEdgeNumber(Vertex *v) {
-    int cnt = 0;
-    for (Move m: v->neighbours){
-        cnt += getEdgeNumber(m.destination);
-    }
-    return (int) v->neighbours.size() + cnt;
-}
-
-vector<Move> Graph::getAllMoves(Vertex *v) {
-    if (!visitedVertexes[v->y][v->x])
-        visitedVertexes[v->y][v->x] = true;
+void Graph::printGraph(Vertex *vertex) {
+    if (!visitedVertexes[vertex->y][vertex->x])
+        visitedVertexes[vertex->y][vertex->x] = true;
     else
-        return vector<Move>();
+        return;
 
-    vector<Move> moves;
-    moves.insert(moves.end(), v->neighbours.begin(), v->neighbours.end());
+//    for (int y = 1; y < gameBoard->y - 1; ++y) {
+//        for (int x = 1; x < gameBoard->x - 1; ++x) {
+//            cout << vertexes[y][x]->y << " " << vertexes[y][x]->x << " : ";
+//            for (Move m : vertexes[y][x]->neighbours){
+//                cout << m.destination->y << "," << m.destination->x << " ";
+//            }
+//            cout << "\n";
+//        }
+//    }
 
-    for (Move m : v->neighbours){
-        vector<Move> neighbourMoves = getAllMoves(m.destination);
-        moves.insert(moves.end(), neighbourMoves.begin(), neighbourMoves.end());
+
+    cout << vertex->y << "," << vertex->x << " : ";
+
+    for (Move m : vertex->neighbours){
+        if (!m.gems.empty()){
+            for (Gem *gem : m.gems){
+                cout << "[" << gem->y << "," << gem->x << "]";
+            }
+        }
+        cout << "(" << m.destination->y << "," << m.destination->x << ")" << " ";
     }
-    return moves;
+    cout << "\n";
+    for (Move m: vertex->neighbours){
+        printGraph(m.destination);
+    }
 }
 
-std::unordered_map<Vertex *, std::unordered_map<Vertex *, vector<Move>>> Graph::shorthestPaths() {
-    std::unordered_map<Vertex *, std::unordered_map<Vertex *, vector<Move>>> shortestPaths = {};
+Gem *Graph::getGem(int y, int x) {
+    for (Gem *gem : gems){
+        if (gem->x==x and gem->y==y)
+            return gem;
+    }
+    return nullptr;
+}
+
+std::unordered_map<Vertex *, std::tuple<std::unordered_map<Vertex *, vector<Move>>, std::unordered_map<Vertex *, int>>>
+Graph::parseForSolver() {
+    std::unordered_map<Vertex *, std::tuple<std::unordered_map<Vertex *, vector<Move>>, std::unordered_map<Vertex *, int>>> alaMaKota = {};
     for (int y = 1; y < gameBoard->y - 1; ++y) {
         for (int x = 1; x < gameBoard->x - 1; ++x) {
             if(visitedVertexes[y][x])
-                shortestPaths[vertexes[y][x]] = bellmanFord(vertexes[y][x]);
+                alaMaKota[vertexes[y][x]] = (bellmanFord(vertexes[y][x]));
         }
     }
-    return shortestPaths;
-}
-
-void Graph::printShortestPaths() {
-
-    for (auto const& y : paths){
-        std::cout << y.first->y << "," << y.first->x << " : ";
-        std::cout << "\n";
-        std::cout << "\n";
-
-        for (auto const& x : y.second){
-            std::cout << x.first->y << "," << x.first->x << " : ";
-
-            for (Move m : x.second){
-                std::cout << (char) m.direction;
-            }
-            std::cout << "\n";
-        }
-        std::cout << "\n";
-        std::cout << "\n";
-        std::cout << "\n";
-
-    }
+    return alaMaKota;
 }
 
 

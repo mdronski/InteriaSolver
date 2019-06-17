@@ -10,6 +10,9 @@
 #include "../Vertex/Vertex.h"
 #include <unordered_map>
 
+typedef std::tuple<std::unordered_map<Vertex *, vector<Move>>, std::unordered_map<Vertex *, int>> vertexParams;
+typedef std::unordered_map<Vertex *, vertexParams> solverArgs;
+
 using namespace std;
 
 
@@ -30,8 +33,9 @@ public:
     std::unordered_map<Vertex*, std::unordered_map<Vertex*, vector<Move>>> paths;
     void printGraph(Vertex *vertex);
     Gem *getGem(int y, int x);
-    std::unordered_map<Vertex*, vector<Move>> bellmanFord(Vertex *src);
+    vertexParams bellmanFord(Vertex *src);
     std::unordered_map<Vertex*, std::unordered_map<Vertex*, vector<Move>>> shorthestPaths();
+    solverArgs parseForSolver();
     int getVertexNumber();
     int getEdgeNumber(Vertex *v);
     vector<Move> getAllMoves(Vertex *v);

@@ -2,6 +2,10 @@
 #define PROJEKT_GAMEBOARD_H
 
 #include <vector>
+#include <sstream>
+#include <utility>
+#include <fstream>
+#include <string>
 #include "../Field.h"
 
 using namespace std;
@@ -12,6 +16,9 @@ public:
     int x;
     int y;
     int maxMoves;
+
+    GameBoard();
+
     void setField(int y, int x, Field field);
     Field getField(int y, int x);
     void print();
@@ -19,6 +26,7 @@ public:
     GameBoard(int x, int y, int maxMoves);
 
     virtual ~GameBoard();
+    friend std::istream &operator>>(std::istream &str, GameBoard &data);
 };
 
 

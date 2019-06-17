@@ -38,3 +38,26 @@ void GameBoard::print() {
         cout << '\n';
     }
 }
+
+std::istream &operator>>(std::istream &str, GameBoard &data) {
+    string line;
+
+    getline(str, line);
+    istringstream (line) >> data.y >> data.x;
+    getline(str, line);
+    istringstream (line) >> data.maxMoves;
+
+    data.board = new Field *[data.y];
+
+    for (int y = 0; y < data.y; ++y) {
+        data.board[y] = new Field[data.x];
+        getline(str, line);
+        for (int x = 0; x < data.x; ++x) {
+            data.setField(y, x, (Field) line[x]);
+        }
+    }
+
+    return str;
+}
+
+GameBoard::GameBoard() {}
