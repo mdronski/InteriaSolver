@@ -8,6 +8,7 @@
 #include <string>
 #include <algorithm>
 #include <queue>
+#include <map>
 
 using namespace std;
 
@@ -19,6 +20,7 @@ enum Field {
     VEHICLE = '.',
     FREE_SPACE = ' '
 };
+
 
 class GameBoard {
 public:
@@ -41,7 +43,6 @@ public:
 
     friend std::istream &operator>>(std::istream &str, GameBoard &data);
 };
-
 
 void GameBoard::setField(int y, int x, Field field) {
     this->board[y][x] = field;
@@ -68,16 +69,6 @@ std::istream &operator>>(std::istream &str, GameBoard &data) {
     }
 
     return str;
-}
-
-GameBoard::GameBoard(int x, int y, int maxMoves) {
-    this->x = x;
-    this->y = y;
-    this->maxMoves = maxMoves;
-    this->board = new Field *[y];
-    for (int i = 0; i < y; ++i) {
-        board[i] = new Field[x];
-    }
 }
 
 GameBoard::~GameBoard() {
@@ -141,10 +132,8 @@ public:
     std::vector<Gem *> gems;
 };
 
-
 Move::Move(Direction direction, Vertex *start, Vertex *destination, const std::vector<Gem *> &gems) : direction(
         direction), start(start), destination(destination), gems(gems) {}
-
 
 class Vertex {
 public:
@@ -156,15 +145,11 @@ public:
     int y;
 };
 
-
 Vertex::Vertex(int y, int x) : x(x), y(y) {}
 
 
 typedef std::tuple<std::unordered_map<Vertex *, vector<Move>>, std::unordered_map<Vertex *, int>> vertexParams;
 typedef std::unordered_map<Vertex *, vertexParams> solverArgs;
-
-using namespace std;
-
 
 class Graph {
 private:
@@ -204,7 +189,6 @@ public:
     void printShortestPaths();
 };
 
-
 static Direction directions[8]{
         UP,
         UP_RIGHT,
@@ -234,20 +218,10 @@ Graph::Graph(GameBoard *gameBoard) {
             if (gameBoard->getField(y, x) == GEM) {
                 this->gems.emplace_back(new Gem(y, x));
             }
-
-
         }
     }
 
     addNeighbours(root);
-
-    for (int y = 1; y < gameBoard->y - 1; ++y) {
-        for (int x = 1; x < gameBoard->x - 1; ++x) {
-            visitedVertexes[y][x] = false;
-        }
-    }
-
-    printGraph(root);
 //
 //    for (int y = 1; y < gameBoard->y - 1; ++y) {
 //        for (int x = 1; x < gameBoard->x - 1; ++x) {
@@ -255,18 +229,10 @@ Graph::Graph(GameBoard *gameBoard) {
 //        }
 //    }
 //
-//    vector<Move> moves = getAllMoves(root);
-//    for (Move m : moves){
-//        if (!m.gems.empty()){
-//            for (Gem *gem : m.gems){
-//                cout << "[" << gem->y << "," << gem->x << "]";
-//            }
-//        }
-//        cout << "(" << m.destination->y << "," << m.destination->x << ")" << " ";
-//    }
+//    printGraph(root);
 
     paths = shorthestPaths();
-    printShortestPaths();
+//    printShortestPaths();
 
 }
 
@@ -317,6 +283,9 @@ void Graph::coverDirection(Vertex *v, Direction dir) {
     int dy = 0;
     int dx = 0;
 
+    if (gameBoard->getField(v->y, v->x) == GEM) {
+        gemsOnMove.emplace_back(getGem(v->y, v->x));
+    }
 //    First iteration
     changeDirection(dy, dx, dir);
     int act_y = v->y + dy;
@@ -434,7 +403,7 @@ std::unordered_map<Vertex *, std::unordered_map<Vertex *, vector<Move>>> Graph::
     std::unordered_map<Vertex *, std::unordered_map<Vertex *, vector<Move>>> shortestPaths = {};
     for (int y = 1; y < gameBoard->y - 1; ++y) {
         for (int x = 1; x < gameBoard->x - 1; ++x) {
-            if (visitedVertexes[y][x]){
+            if (visitedVertexes[y][x]) {
                 shortestPaths[vertexes[y][x]] = std::get<0>(bellmanFord(vertexes[y][x]));
             }
         }
@@ -447,10 +416,8 @@ Graph::bellmanFord(Vertex *src) {
     int V = getVertexNumber();
     std::unordered_map<Vertex *, int> dist = {};
     std::unordered_map<Vertex *, vector<Move>> paths = {};
-//    int dist[V];
 
-    // Step 1: Initialize distances from src to all other vertices
-    // as INFINITE
+
     for (int y = 1; y < gameBoard->y - 1; ++y) {
         for (int x = 1; x < gameBoard->x - 1; ++x) {
             if (visitedVertexes[y][x]) {
@@ -469,9 +436,7 @@ Graph::bellmanFord(Vertex *src) {
     dist[src] = 0;
     vector<Move> moves = getAllMoves(root);
 
-    // Step 2: Relax all edges |V| - 1 times. A simple shortest
-    // path from src to any other vertex can have at-most |V| - 1
-    // edges
+
     for (int i = 1; i <= V - 1; i++) {
         for (Move m : moves) {
             Vertex *u = m.start;
@@ -548,7 +513,7 @@ public:
 
     void run();
 
-    std::pair<bool, vector<Move>> solve(Vertex *root, std::pair<bool, vector<Move>> solution, int length);
+    std::pair<bool, vector<Move>> solve(Vertex *root, int length);
 };
 
 
@@ -564,119 +529,197 @@ bool anyLeft(Gem *g) {
     return not g->taken;
 }
 
+//std::pair<bool, vector<Move>>
+//Solver::solve(Vertex *root, int length) {
+//    if (length > graph->gameBoard->maxMoves) {
+//        return make_pair(false, vector<Move>());
+//    }
+//
+//    if (isFinished()) {
+//        return make_pair(true, vector<Move>());
+//    }
+//
+//    vertexParams params = args[root];
+//    std::unordered_map<Vertex *, vector<Move>> moves = std::get<0>(params);
+//    std::unordered_map<Vertex *, int> shortestPaths = std::get<1>(params);
+//
+//    std::vector<std::pair<Vertex *, int>> paths(shortestPaths.begin(), shortestPaths.end());
+//    std::sort(paths.begin(), paths.end(), comp);
+//
+//    std::vector<std::vector<bool>> visitedVertexes(graph->gameBoard->y, std::vector<bool>(graph->gameBoard->x, false));
+//    std::queue<Vertex *> queue;
+//    auto v = paths.front().first;
+//    visitedVertexes[v->y][v->x] = true;
+//    queue.push(v);
+//
+//
+//    //cout << "Pushed " << v->y << "," << v->x << "\n";
+//
+//    while (not queue.empty()) {
+////        std::cin.ignore();
+//        v = queue.front();
+//        queue.pop();
+//
+//        //cout << "Poped " << v->y << "," << v->x << "\n";
+//
+//        for (auto m : v->neighbours) {
+//
+//            //cout << "Analyzing " << " " << m.start->y << "," << m.start->x << " " << (char) m.direction << " " << m.destination->y << "," << m.destination->x << "\n";
+//
+//            if (not m.gems.empty()) {
+//                std::vector<Gem *> freeGems;
+//                std::copy_if(m.gems.begin(), m.gems.end(), std::back_inserter(freeGems),
+//                             [](Gem *g) { return not g->taken; });
+//                if (freeGems.empty())
+//                    continue;
+//
+//                //cout << "\tIt has gems! " << "\n";
+//
+//                for (auto g : freeGems) {
+//                    takeGem(g);
+//                    //cout << "\tTaken gem at " << g->y << "," << g->x << "\n";
+//                }
+//
+//                auto partialSolution = solve(m.destination, length + 1);
+//
+////                if (partialSolution.first && partialSolution.second.empty()){
+////                    cout << (char) m.direction << "\n";
+////                    cout << m.start->y << " " << m.start->x  <<"\n";
+////                    cout << m.destination->y << " " << m.destination->x  <<"\n";
+////                }
+////
+////                if (partialSolution.first && partialSolution.second.size() == 1){
+////                    cout << (char) m.direction << "\n";
+////                    cout << m.start->y << " " << m.start->x  <<"\n";
+////                    cout << m.destination->y << " " << m.destination->x  <<"\n";
+////                }
+//
+//                if (partialSolution.first) {
+////                    if (partialSolution.second.empty())
+////                        partialSolution.second.emplace_back(m);
+//
+//
+//                    partialSolution.second.insert(partialSolution.second.begin(), m);
+//                    partialSolution.second.insert(partialSolution.second.begin(), moves[m.start].begin(),
+//                                                  moves[m.start].end());
+//
+//
+//
+//                    //cout << "\tIt belongs to solution! " << "\n";
+//                    return partialSolution;
+//                }
+//
+//                //cout << "\tIt doesnt belong to solution! " << "\n";
+//
+//                for (auto g : freeGems) {
+//                    returnGem(g);
+//                    //cout << "\tReturned gem at " << g->y << "," << g->x << "\n";
+//                }
+//            }
+//
+//
+//        }
+//
+//        length++;
+//        for (auto m : v->neighbours) {
+//            auto neighbour = m.destination;
+//            if (visitedVertexes[neighbour->y][neighbour->x])
+//                continue;
+//            //cout << "Pushed " << neighbour->y << "," << neighbour->x << "\n";
+//            queue.push(neighbour);
+//            visitedVertexes[neighbour->y][neighbour->x] = true;
+//        }
+//    }
+////    for (auto m : solution.second)
+////        for (auto g : m.gems)
+////        returnGem(g);
+//
+//    return make_pair(false, vector<Move>());
+//}
+
+bool allGemsTaken(vector<Gem *> gems){
+    for (auto g : gems)
+        if (not g->taken)
+            return  false;
+    return true;
+}
+
+bool moveVecComp(pair<Vertex *, pair<vector<Move>, vector<Gem*>>> p1, pair<Vertex *, pair<vector<Move>, vector<Gem*>>> p2){
+    int pos1 = 0;
+    int pos2 = 0;
+    for (auto m : p1.second.first){
+        if (not m.gems.empty() and not allGemsTaken(m.gems))
+            break;
+        pos1++;
+    }
+
+    for (auto m : p2.second.first){
+        if (not m.gems.empty() and not allGemsTaken(m.gems))
+            break;
+        pos2++;
+    }
+
+    return pos1 < pos2;
+}
+
+vector<pair<Vertex *, pair<vector<Move>, vector<Gem*>>>> getMovesWithGems(std::unordered_map<Vertex *, vector<Move>> allMoves){
+    vector<pair<Vertex *, pair<vector<Move>, vector<Gem*>>>> movesWithGems;
+    for (auto kv : allMoves){
+        for (Move m : kv.second){
+            vector<Gem> tmpGems;
+            if (not m.gems.empty() and not allGemsTaken(m.gems)){
+                for(auto g : m.gems){
+                    if ( not g->taken)
+                        tmpGems.emplace_back(g);
+//                        movesWithGems[kv.first].second.emplace_back(g);
+                }
+                movesWithGems.emplace_back(make_pair(kv.first, make_pair(kv.second, tmpGems)));
+//                movesWithGems[kv.first].first = kv.second;
+                continue;
+            }
+        }
+    }
+
+//    std::sort(movesWithGems.begin(), movesWithGems.end(), moveVecComp);
+    return movesWithGems;
+}
+
+
 std::pair<bool, vector<Move>>
-Solver::solve(Vertex *root, std::pair<bool, vector<Move>> solution, int length) {
+Solver::solve(Vertex *root, int length) {
     if (length > graph->gameBoard->maxMoves) {
-        solution.first = false;
-        return solution;
+        return make_pair(false, vector<Move>());
     }
 
     if (isFinished()) {
-        solution.first = true;
-        return solution;
+        return make_pair(true, vector<Move>());
     }
 
     vertexParams params = args[root];
     std::unordered_map<Vertex *, vector<Move>> moves = std::get<0>(params);
-    std::unordered_map<Vertex *, int> shortestPaths = std::get<1>(params);
+    map<Vertex *, pair<vector<Move>, vector<Gem*>>> movesWithGems = getMovesWithGems(moves);
 
-    std::vector<std::pair<Vertex *, int>> paths(shortestPaths.begin(), shortestPaths.end());
-    std::sort(paths.begin(), paths.end(), comp);
+    for (auto kv : movesWithGems){
 
-    std::vector<std::vector<bool>> visitedVertexes(graph->gameBoard->y, std::vector<bool>(graph->gameBoard->x, false));
-    std::queue<Vertex *> queue;
-    auto v = paths.front().first;
-    visitedVertexes[v->y][v->x] = true;
-    queue.push(v);
-
-    std::queue<Move> moveQueue;
-    int depth = 0;
-
-    //cout << "Pushed " << v->y << "," << v->x << "\n";
-
-    while (not queue.empty()) {
-//        std::cin.ignore();
-        v = queue.front();
-        queue.pop();
-
-        //cout << "Poped " << v->y << "," << v->x << "\n";
-
-        for (auto m : v->neighbours) {
-
-            //cout << "Analyzing " << " " << m.start->y << "," << m.start->x << " " << (char) m.direction << " " << m.destination->y << "," << m.destination->x << "\n";
-
-            if (not m.gems.empty()) {
-                std::vector<Gem *> freeGems;
-                std::copy_if(m.gems.begin(), m.gems.end(), std::back_inserter(freeGems),
-                             [](Gem *g) { return not g->taken; });
-                if (freeGems.empty())
-                    continue;
-
-                //cout << "\tIt has gems! " << "\n";
-
-                for (auto g : freeGems) {
-                    takeGem(g);
-                    //cout << "\tTaken gem at " << g->y << "," << g->x << "\n";
-                }
-
-                auto partialSolution = solve(m.destination, solution, length + 1);
-
-//                if (partialSolution.first && partialSolution.second.empty()){
-//                    cout << (char) m.direction << "\n";
-//                    cout << m.start->y << " " << m.start->x  <<"\n";
-//                    cout << m.destination->y << " " << m.destination->x  <<"\n";
-//                }
-//
-//                if (partialSolution.first && partialSolution.second.size() == 1){
-//                    cout << (char) m.direction << "\n";
-//                    cout << m.start->y << " " << m.start->x  <<"\n";
-//                    cout << m.destination->y << " " << m.destination->x  <<"\n";
-//                }
-
-                if (partialSolution.first) {
-//                    if (partialSolution.second.empty())
-//                        partialSolution.second.emplace_back(m);
-
-//                    for (int i = 0; i < depth; ++i) {
-//                        partialSolution.second.insert(partialSolution.second.begin(), moveQueue.front());
-//                        moveQueue.pop();
-//                    }
-                    partialSolution.second.insert(partialSolution.second.begin(), m);
-                    partialSolution.second.insert(partialSolution.second.begin(), moves[m.start].begin(),
-                                                  moves[m.start].end());
-
-
-//                    10615473126
-                    //cout << "\tIt belongs to solution! " << "\n";
-                    return partialSolution;
-                }
-
-                //cout << "\tIt doesnt belong to solution! " << "\n";
-
-                for (auto g : freeGems) {
-                    returnGem(g);
-                    //cout << "\tReturned gem at " << g->y << "," << g->x << "\n";
-                }
+        for (auto g :kv.second.second) {
+            takeGem(g);
             }
-            if (not moveQueue.empty())
-                moveQueue.pop();
 
+        auto partialSolution = solve(kv.first, static_cast<int>(length + kv.second.first.size()));
+        if (partialSolution.first){
+            partialSolution.second.insert(
+                    partialSolution.second.begin(), kv.second.first.begin(), kv.second.first.end());
+            return partialSolution;
         }
 
-        length++;
-        depth++;
-        for (auto m : v->neighbours) {
-            auto neighbour = m.destination;
-            if (visitedVertexes[neighbour->y][neighbour->x])
-                continue;
-            //cout << "Pushed " << neighbour->y << "," << neighbour->x << "\n";
-            queue.push(neighbour);
-            moveQueue.push(m);
-            visitedVertexes[neighbour->y][neighbour->x] = true;
+        for (auto g :kv.second.second) {
+            returnGem(g);
         }
     }
-    return solution;
+    return make_pair(false, vector<Move>());
 }
+
+
 
 void Solver::takeGem(Gem *g) {
     for (Gem *gem : this->graph->gems) {
@@ -701,11 +744,16 @@ bool Solver::isFinished() {
 }
 
 void Solver::run() {
-    auto sol = solve(graph->root, make_pair(false, vector<Move>()), 0);
+    auto sol = solve(graph->root, 0);
     if (sol.first) {
         for (auto m : sol.second)
             cout << (char) m.direction;
         cout << "\n";
+    } else {
+//        while (true){
+//
+//        }
+        cout << "BRAK";
     }
 }
 
@@ -719,6 +767,7 @@ int main(int argc, char **argv) {
         cin >> gameBoard;
     }
     Graph graph = Graph(&gameBoard);
+//    gameBoard.print();
     Solver solver = Solver(&graph);
     solver.run();
     return 0;
