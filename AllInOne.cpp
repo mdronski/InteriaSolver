@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <queue>
 #include <map>
+#include <ctime>
 
 using namespace std;
 
@@ -21,6 +22,7 @@ enum Field {
     FREE_SPACE = ' '
 };
 
+int cnt = 0;
 
 class GameBoard {
 public:
@@ -637,7 +639,7 @@ bool anyLeft(Gem *g) {
 //    return make_pair(false, vector<Move>());
 //}
 
-bool allGemsTaken(vector<Gem *> gems){
+bool allGemsTaken(const vector<Gem *> &gems){
     for (auto g : gems)
         if (not g->taken)
             return  false;
@@ -662,19 +664,16 @@ bool moveVecComp(pair<Vertex *, pair<vector<Move>, vector<Gem*>>> p1, pair<Verte
     return pos1 < pos2;
 }
 
-vector<pair<Vertex *, pair<vector<Move>, vector<Gem*>>>> getMovesWithGems(std::unordered_map<Vertex *, vector<Move>> allMoves){
-    vector<pair<Vertex *, pair<vector<Move>, vector<Gem*>>>> movesWithGems;
+std::map<Vertex *, pair<vector<Move>, vector<Gem*>>> getMovesWithGems(std::unordered_map<Vertex *, vector<Move>> &allMoves){
+    std::map<Vertex *, pair<vector<Move>, vector<Gem*>>> movesWithGems;
     for (auto kv : allMoves){
         for (Move m : kv.second){
-            vector<Gem> tmpGems;
             if (not m.gems.empty() and not allGemsTaken(m.gems)){
                 for(auto g : m.gems){
                     if ( not g->taken)
-                        tmpGems.emplace_back(g);
-//                        movesWithGems[kv.first].second.emplace_back(g);
+                        movesWithGems[kv.first].second.emplace_back(g);
                 }
-                movesWithGems.emplace_back(make_pair(kv.first, make_pair(kv.second, tmpGems)));
-//                movesWithGems[kv.first].first = kv.second;
+                movesWithGems[kv.first].first = kv.second;
                 continue;
             }
         }
@@ -684,9 +683,78 @@ vector<pair<Vertex *, pair<vector<Move>, vector<Gem*>>>> getMovesWithGems(std::u
     return movesWithGems;
 }
 
+pair<Vertex *, pair<vector<Move>, vector<Gem*>>> getPathWithMostGems(map<Vertex *, pair<vector<Move>, vector<Gem*>>> &movesWithGems){
+    int maxGems = static_cast<int>(movesWithGems.begin()->second.second.size());
+    Vertex *maxGemVertex = movesWithGems.begin()->first;
+
+    for (auto kv : movesWithGems) {
+        if (kv.second.second.size() > maxGems){
+            maxGems = static_cast<int>(kv.second.second.size());
+            maxGemVertex = kv.first;
+        }
+    }
+
+    auto res = make_pair(maxGemVertex, movesWithGems[maxGemVertex]);
+    movesWithGems.erase(maxGemVertex);
+    return res;
+
+};
+
+pair<Vertex *, pair<vector<Move>, vector<Gem*>>> getshortestPath(map<Vertex *, pair<vector<Move>, vector<Gem*>>> &movesWithGems){
+    int maxGems = static_cast<int>(movesWithGems.begin()->second.first.size());
+    Vertex *maxGemVertex = movesWithGems.begin()->first;
+
+    for (auto kv : movesWithGems) {
+        if (kv.second.second.size() > maxGems){
+            maxGems = static_cast<int>(kv.second.first.size());
+            maxGemVertex = kv.first;
+        }
+    }
+
+    auto res = make_pair(maxGemVertex, movesWithGems[maxGemVertex]);
+    movesWithGems.erase(maxGemVertex);
+    return res;
+
+};
+//
+//std::pair<bool, vector<Move>>
+//Solver::solve(Vertex *root, int length) {
+//    if (length > graph->gameBoard->maxMoves) {
+//        return make_pair(false, vector<Move>());
+//    }
+//
+//    if (isFinished()) {
+//        return make_pair(true, vector<Move>());
+//    }
+//
+//    vertexParams params = args[root];
+//    std::unordered_map<Vertex *, vector<Move>> moves = std::get<0>(params);
+//    map<Vertex *, pair<vector<Move>, vector<Gem*>>> movesWithGems = getMovesWithGems(moves);
+//
+//    for (auto kv : movesWithGems){
+//
+//        for (auto g :kv.second.second) {
+//            takeGem(g);
+//            }
+//
+//        auto partialSolution = solve(kv.first, static_cast<int>(length + kv.second.first.size()));
+//        if (partialSolution.first){
+//            partialSolution.second.insert(
+//                    partialSolution.second.begin(), kv.second.first.begin(), kv.second.first.end());
+//            return partialSolution;
+//        }
+//
+//        for (auto g :kv.second.second) {
+//            returnGem(g);
+//        }
+//    }
+//    return make_pair(false, vector<Move>());
+//}
+
 
 std::pair<bool, vector<Move>>
 Solver::solve(Vertex *root, int length) {
+//    cout << cnt++ << "\n";
     if (length > graph->gameBoard->maxMoves) {
         return make_pair(false, vector<Move>());
     }
@@ -699,11 +767,13 @@ Solver::solve(Vertex *root, int length) {
     std::unordered_map<Vertex *, vector<Move>> moves = std::get<0>(params);
     map<Vertex *, pair<vector<Move>, vector<Gem*>>> movesWithGems = getMovesWithGems(moves);
 
-    for (auto kv : movesWithGems){
+    while (not movesWithGems.empty()){
+        auto kv = getPathWithMostGems(movesWithGems);
+//        auto kv = getshortestPath(movesWithGems);
 
         for (auto g :kv.second.second) {
             takeGem(g);
-            }
+        }
 
         auto partialSolution = solve(kv.first, static_cast<int>(length + kv.second.first.size()));
         if (partialSolution.first){
@@ -718,7 +788,6 @@ Solver::solve(Vertex *root, int length) {
     }
     return make_pair(false, vector<Move>());
 }
-
 
 
 void Solver::takeGem(Gem *g) {
